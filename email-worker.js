@@ -43,6 +43,7 @@ export default {
 
     // Option 1: forward to Pages API
     try {
+      // 转发到 Pages 应用的 API
       const apiUrl = 'https://xieziji.shop/api/emails';
 
       const response = await fetch(apiUrl, {
