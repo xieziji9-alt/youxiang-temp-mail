@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 
+export const runtime = 'edge'
+
 // 定义请求体类型
 interface GenerateEmailRequest {
   domain: string
@@ -29,4 +31,3 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: '生成邮箱失败' }, { status: 500 })
   }
 }
-
