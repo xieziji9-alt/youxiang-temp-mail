@@ -1,16 +1,16 @@
 /**
- * Cloudflare Pages Function - 邮件 API
- * 路径: /api/emails
- * 
- * 这个文件会自动部署为 Cloudflare Pages Function
- * 替代 Next.js 的 API Routes
+ * Cloudflare Pages Function - 邮件 API (ASCII-escaped)
+ * Path: /api/emails
+ *
+ * This file is deployed as a Cloudflare Pages Function
+ * replacing the Next.js API routes when running on Pages.
  */
 
 interface Env {
   EMAIL_STORAGE: KVNamespace;
 }
 
-interface Email {
+type Email = {
   id: string;
   from: string;
   to: string;
@@ -18,116 +18,141 @@ interface Email {
   text: string;
   html?: string;
   receivedAt: string;
-}
+};
+
+type StoredEmail = Email;
 
 // GET /api/emails?address=xxx@xieziji.shop
-// 获取指定邮箱地址的所有邮件
 export const onRequestGet: PagesFunction<Env> = async (context) => {
   const url = new URL(context.request.url);
   const address = url.searchParams.get('address');
-  
+
   if (!address) {
-    return new Response(JSON.stringify({ error: '缺少 address 参数' }), {
+    return new Response(JSON.stringify({ error: '\u7f3a\u5c11 address \u53c2\u6570' }), {
       status: 400,
-      headers: { 'Content-Type': 'application/json' }
+      headers: { 'Content-Type': 'application/json' },
     });
   }
-  
+
   try {
-    // 从 KV 中获取邮件
-    const emails: Email[] = [];
-    
+    const emails: StoredEmail[] = [];
+
     if (context.env.EMAIL_STORAGE) {
-      // 列出所有匹配的邮件
       const prefix = `email:${address}:`;
       const list = await context.env.EMAIL_STORAGE.list({ prefix });
-      
-      // 获取每封邮件的详细内容
+
       for (const key of list.keys) {
         const emailJson = await context.env.EMAIL_STORAGE.get(key.name);
+
         if (emailJson) {
-          emails.push(JSON.parse(emailJson));
+          try {
+            const parsed = JSON.parse(emailJson) as StoredEmail;
+            emails.push(parsed);
+          } catch (parseError) {
+            console.error('\u89e3\u6790\u90ae\u4ef6\u5931\u8d25:', parseError, key.name);
+          }
         }
       }
-      
-      // 按时间倒序排序
-      emails.sort((a, b) => 
-        new Date(b.receivedAt).getTime() - new Date(a.receivedAt).getTime()
+
+      emails.sort(
+        (a, b) =>
+          new Date(b.receivedAt).getTime() - new Date(a.receivedAt).getTime(),
       );
     }
-    
+
     return new Response(JSON.stringify(emails), {
       status: 200,
-      headers: { 
+      headers: {
         'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*'
-      }
+        'Access-Control-Allow-Origin': '*',
+      },
     });
   } catch (error) {
-    console.error('获取邮件失败:', error);
-    return new Response(JSON.stringify({ error: '获取邮件失败' }), {
+    console.error('\u83b7\u53d6\u90ae\u4ef6\u5931\u8d25:', error);
+    return new Response(JSON.stringify({ error: '\u83b7\u53d6\u90ae\u4ef6\u5931\u8d25' }), {
       status: 500,
-      headers: { 'Content-Type': 'application/json' }
+      headers: { 'Content-Type': 'application/json' },
     });
   }
 };
 
 // POST /api/emails
-// 接收新邮件（由 Email Worker 调用）
+// Receives new emails forwarded by the Email Worker
 export const onRequestPost: PagesFunction<Env> = async (context) => {
   try {
-    const emailData = await context.request.json() as Email;
-    
-    // 验证请求来源
     const workerHeader = context.request.headers.get('X-Email-Worker');
     if (workerHeader !== 'true') {
-      return new Response(JSON.stringify({ error: '未授权' }), {
+      return new Response(JSON.stringify({ error: '\u672a\u6388\u6743' }), {
         status: 401,
-        headers: { 'Content-Type': 'application/json' }
+        headers: { 'Content-Type': 'application/json' },
       });
     }
-    
-    // 存储到 KV
+
+    const rawEmail = (await context.request.json()) as Partial<StoredEmail>;
+
+    if (!rawEmail.id || !rawEmail.to) {
+      return new Response(
+        JSON.stringify({ error: '\u7f3a\u5c11\u90ae\u4ef6\u6807\u8bc6\u6216\u6536\u4ef6\u4eba\u5730\u5740' }),
+        {
+          status: 400,
+          headers: { 'Content-Type': 'application/json' },
+        },
+      );
+    }
+
+    const email: StoredEmail = {
+      id: rawEmail.id,
+      to: rawEmail.to,
+      from: rawEmail.from ?? 'unknown@example.com',
+      subject: rawEmail.subject ?? '(\u65e0\u4e3b\u9898)',
+      text: rawEmail.text ?? rawEmail.html ?? '',
+      html: rawEmail.html,
+      receivedAt: rawEmail.receivedAt ?? new Date().toISOString(),
+    };
+
     if (context.env.EMAIL_STORAGE) {
-      const key = `email:${emailData.to}:${emailData.id}`;
-      await context.env.EMAIL_STORAGE.put(key, JSON.stringify(emailData), {
-        expirationTtl: 3600 // 1小时后自动删除
+      const key = `email:${email.to}:${email.id}`;
+      await context.env.EMAIL_STORAGE.put(key, JSON.stringify(email), {
+        expirationTtl: 86400, // 24 hours
       });
     }
-    
-    return new Response(JSON.stringify({ success: true, id: emailData.id }), {
+
+    return new Response(JSON.stringify({ success: true, id: email.id }), {
       status: 200,
-      headers: { 
+      headers: {
         'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*'
-      }
+        'Access-Control-Allow-Origin': '*',
+      },
     });
   } catch (error) {
-    console.error('接收邮件失败:', error);
-    return new Response(JSON.stringify({ error: '接收邮件失败' }), {
+    console.error('\u63a5\u6536\u90ae\u4ef6\u5931\u8d25:', error);
+    return new Response(JSON.stringify({ error: '\u63a5\u6536\u90ae\u4ef6\u5931\u8d25' }), {
       status: 500,
-      headers: { 'Content-Type': 'application/json' }
+      headers: { 'Content-Type': 'application/json' },
     });
   }
 };
 
-// DELETE /api/emails?id=xxx
-// 删除指定邮件
+// DELETE /api/emails?address=xxx&id=yyy
 export const onRequestDelete: PagesFunction<Env> = async (context) => {
   const url = new URL(context.request.url);
+  const address = url.searchParams.get('address');
   const id = url.searchParams.get('id');
-  
-  if (!id) {
-    return new Response(JSON.stringify({ error: '缺少 id 参数' }), {
-      status: 400,
-      headers: { 'Content-Type': 'application/json' }
-    });
+
+  if (!address || !id) {
+    return new Response(
+      JSON.stringify({ error: '\u7f3a\u5c11 address \u6216 id \u53c2\u6570' }),
+      {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      },
+    );
   }
-  
+
   try {
     if (context.env.EMAIL_STORAGE) {
-      // 查找并删除邮件
-      const list = await context.env.EMAIL_STORAGE.list();
+      const prefix = `email:${address}:`;
+      const list = await context.env.EMAIL_STORAGE.list({ prefix });
       for (const key of list.keys) {
         if (key.name.endsWith(`:${id}`)) {
           await context.env.EMAIL_STORAGE.delete(key.name);
@@ -135,24 +160,24 @@ export const onRequestDelete: PagesFunction<Env> = async (context) => {
         }
       }
     }
-    
+
     return new Response(JSON.stringify({ success: true }), {
       status: 200,
-      headers: { 
+      headers: {
         'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*'
-      }
+        'Access-Control-Allow-Origin': '*',
+      },
     });
   } catch (error) {
-    console.error('删除邮件失败:', error);
-    return new Response(JSON.stringify({ error: '删除邮件失败' }), {
+    console.error('\u5220\u9664\u90ae\u4ef6\u5931\u8d25:', error);
+    return new Response(JSON.stringify({ error: '\u5220\u9664\u90ae\u4ef6\u5931\u8d25' }), {
       status: 500,
-      headers: { 'Content-Type': 'application/json' }
+      headers: { 'Content-Type': 'application/json' },
     });
   }
 };
 
-// OPTIONS - CORS 预检请求
+// OPTIONS - CORS preflight
 export const onRequestOptions: PagesFunction = async () => {
   return new Response(null, {
     status: 204,
@@ -160,7 +185,7 @@ export const onRequestOptions: PagesFunction = async () => {
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type, X-Email-Worker',
-    }
+    },
   });
 };
 
