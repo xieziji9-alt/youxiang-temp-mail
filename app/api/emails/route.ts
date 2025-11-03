@@ -16,10 +16,19 @@ export async function GET(request: NextRequest) {
   return NextResponse.json(emails)
 }
 
+// 定义邮件接收的数据类型
+interface IncomingEmail {
+  to: string
+  from?: string
+  subject?: string
+  content?: string
+  html?: string
+}
+
 // 接收新邮件（用于邮件服务器回调）
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json()
+    const body = await request.json() as IncomingEmail
     const { to, from, subject, content, html } = body
 
     if (!to) {
