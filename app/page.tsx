@@ -13,20 +13,14 @@ interface Email {
   isRead: boolean;
 }
 
-// Subdomains for xieziji.shop
-const SUBDOMAINS = [
-  'cheyu',
-  'yumail',
-  'tempmail',
-  'mail',
-  'temp',
-  'inbox',
-  'email',
-  'box',
-  'msg',
+// Email domains for temporary mailbox
+const EMAIL_DOMAINS = [
+  'xieziji.shop',
+  'cheyu.xieziji.shop',
+  'yumail.xieziji.shop',
+  'tempmail.xieziji.shop',
+  'mail.xieziji.shop',
 ] as const;
-
-const BASE_DOMAIN = 'xieziji.shop';
 
 const MOCK_EMAIL: Email = {
   id: 'mock-1',
@@ -48,8 +42,8 @@ const MOCK_EMAIL: Email = {
 };
 
 export default function Home() {
-  const [selectedSubdomain, setSelectedSubdomain] =
-    useState<(typeof SUBDOMAINS)[number]>(SUBDOMAINS[0]);
+  const [selectedDomain, setSelectedDomain] =
+    useState<(typeof EMAIL_DOMAINS)[number]>(EMAIL_DOMAINS[0]);
   const [emailAddress, setEmailAddress] = useState('');
   const [emails, setEmails] = useState<Email[]>([]);
   const [selectedEmail, setSelectedEmail] = useState<Email | null>(null);
@@ -60,12 +54,11 @@ export default function Home() {
   const generateEmail = useCallback(() => {
     const randomString =
       Math.random().toString(36).substring(2, 8) + Math.random().toString(36).substring(2, 8);
-    const fullDomain = `${selectedSubdomain}.${BASE_DOMAIN}`;
-    const address = `${randomString}@${fullDomain}`;
+    const address = `${randomString}@${selectedDomain}`;
     setEmailAddress(address);
     setEmails([]);
     setSelectedEmail(null);
-  }, [selectedSubdomain]);
+  }, [selectedDomain]);
 
   // Copy email address to clipboard
   const copyEmail = useCallback(async () => {
@@ -194,23 +187,23 @@ export default function Home() {
             {'\u751f\u6210\u4e34\u65f6\u90ae\u7bb1'}
           </h2>
 
-          {/* Subdomain selection */}
+          {/* Domain selection */}
           <div className="mb-4">
             <label className="mb-2 block text-sm font-medium text-gray-700">
-              {'\u9009\u62e9\u4e09\u7ea7\u57df\u540d'}
+              {'\u9009\u62e9\u90ae\u7bb1\u57df\u540d'}
             </label>
-            <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
-              {SUBDOMAINS.map((subdomain) => (
+            <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+              {EMAIL_DOMAINS.map((domain) => (
                 <button
-                  key={subdomain}
-                  onClick={() => setSelectedSubdomain(subdomain)}
+                  key={domain}
+                  onClick={() => setSelectedDomain(domain)}
                   className={`rounded-lg border-2 px-4 py-2 transition-all ${
-                    selectedSubdomain === subdomain
+                    selectedDomain === domain
                       ? 'border-blue-500 bg-blue-50 text-blue-700'
                       : 'border-gray-200 text-gray-700 hover:border-gray-300'
                   }`}
                 >
-                  @{subdomain}.{BASE_DOMAIN}
+                  @{domain}
                 </button>
               ))}
             </div>
