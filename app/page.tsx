@@ -61,7 +61,7 @@ export default function Home() {
     try {
       const response = await fetch(`/api/emails?address=${emailAddress}`)
       if (response.ok) {
-        const data = await response.json()
+        const data = await response.json() as Email[]
         setEmails(data)
       }
     } catch (error) {
