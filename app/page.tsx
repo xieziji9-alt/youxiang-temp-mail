@@ -14,12 +14,9 @@ interface Email {
 }
 
 // Email domains for temporary mailbox
+// 注意：Cloudflare Email Routing 的 Catch-All 只支持主域名，不支持子域名
 const EMAIL_DOMAINS = [
   'xieziji.shop',
-  'cheyu.xieziji.shop',
-  'yumail.xieziji.shop',
-  'tempmail.xieziji.shop',
-  'mail.xieziji.shop',
 ] as const;
 
 const MOCK_EMAIL: Email = {
