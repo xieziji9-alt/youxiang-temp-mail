@@ -76,7 +76,7 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
 // 接收新邮件（由 Email Worker 调用）
 export const onRequestPost: PagesFunction<Env> = async (context) => {
   try {
-    const emailData: Email = await context.request.json();
+    const emailData = await context.request.json() as Email;
     
     // 验证请求来源
     const workerHeader = context.request.headers.get('X-Email-Worker');

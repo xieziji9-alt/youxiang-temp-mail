@@ -5,11 +5,15 @@
 
 interface Env {}
 
+interface GenerateRequest {
+  subdomain?: string;
+}
+
 // POST /api/generate
 // 生成随机邮箱地址
 export const onRequestPost: PagesFunction<Env> = async (context) => {
   try {
-    const body = await context.request.json();
+    const body = await context.request.json() as GenerateRequest;
     const subdomain = body.subdomain || 'cheyu';
     const baseDomain = 'xieziji.shop';
     

@@ -1,9 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 
+// 定义请求体类型
+interface GenerateEmailRequest {
+  domain: string
+}
+
 // 生成随机邮箱地址
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json()
+    const body = await request.json() as GenerateEmailRequest
     const { domain } = body
 
     if (!domain) {
