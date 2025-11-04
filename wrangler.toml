@@ -1,8 +1,8 @@
 name = "youxiang-temp-mail"
 compatibility_date = "2024-01-01"
-pages_build_output_dir = ".next"
+pages_build_output_dir = "out"
 
-# KV 命名空间绑定（暂时禁用，使用内存存储）
+# KV 命名空间绑定（可选 - 用于生产环境邮件存储）
 # 如需启用，请在 Cloudflare Dashboard 创建 KV 命名空间并填写 ID
 # [[kv_namespaces]]
 # binding = "EMAIL_STORAGE"
@@ -11,7 +11,7 @@ pages_build_output_dir = ".next"
 [env.production]
 name = "youxiang-temp-mail"
 
-# 生产环境 KV 绑定（暂时禁用）
+# 生产环境 KV 绑定（可选）
 # [[env.production.kv_namespaces]]
 # binding = "EMAIL_STORAGE"
 # id = "your-kv-namespace-id"
